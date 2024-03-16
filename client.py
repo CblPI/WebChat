@@ -71,9 +71,6 @@ async def async_input() -> str:
     return await loop.run_in_executor(None, input)
 
 if __name__ == "__main__":
-    port = os.getenv('PORT')
-    host = os.getenv('HOST')
-
     try:
         username = input("Введите имя: ")
         chat_client = ChatClient(os.getenv('HOST'),os.getenv('PORT'), username)
