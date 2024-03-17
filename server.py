@@ -42,6 +42,8 @@ class ChatServer:
                     logging.info(f'Пользователь: {message["login"]} покинул чат.')
             except json.JSONDecodeError:
                 logging.error("Неверный JSON от клиента")
+        await self.send_to_all({"event": "leave", "login": self.clients[writer]})
+        del self.clients[writer]
 
 
     async def send_to_all(self, message):
