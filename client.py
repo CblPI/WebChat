@@ -16,21 +16,24 @@ console = logging.StreamHandler()
 console.setLevel(logging.INFO)
 logging.getLogger('').addHandler(console)
 
+
 class ChatClient:
     def __init__(self, host, port, username):
         self.host = host
         self.port = port
         self.username = username
+        self.is_connect = False
+
 
     async def connect(self):
         logging.info("Попытка присоединиться...")
         self.reader, self.writer = await asyncio.open_connection(self.host, self.port)
-
-        join_message = ({"event": "join", "login": self.username})
-        await self.send_message(join_message)
+        self.is_connect = True
+        await self.send_message(event="join",login=self.username)
         asyncio.create_task(self.receive_messages())
 
-    async def receive_messages(self):
+
+    async def receive_messages(self,):
         while data := await self.reader.readline():
             message = json.loads(data.decode())
             if message["event"] == "message":
@@ -40,13 +43,16 @@ class ChatClient:
             elif message["event"] == "join":
                 logging.info(f"{message['login']} зашел")
 
-    async def send_message(self, message):
-        try:
-            data = json.dumps(message)
-            self.writer.write(data.encode() + b"\n")
-            await self.writer.drain()
-        except ConnectionError as e:
-            logging.info(f"Ошибка отправки сообщения: {str(e)}")
+
+    async def send_message(self, **kwargs):
+            try:
+                data = json.dumps(kwargs)
+                self.writer.write(data.encode() + b"\n")
+                await self.writer.drain()
+            except ConnectionError as e:
+                logging.info(f"Ошибка отправки сообщения: {str(e)}")
+                writer.close()
+                await writer.wait_closed()
 
 
     async def start_chatting(self):
@@ -55,20 +61,20 @@ class ChatClient:
             while True:
                 message_text = await async_input()
                 if message_text.lower() == 'quit':
-                    leave_message = {"event": "leave", "login": self.username}
-                    await self.send_message(leave_message)
+                    await self.send_message(event="leave", login=self.username)
                     self.writer.close()
                     await self.writer.wait_closed()
                     break
                 else:
-                    message = {"event": "message", "text": message_text, "user": self.username}
-                    await self.send_message(message)
+                    await self.send_message(event="message", text=message_text, user=self.username)
         except Exception as err:
             logging.critical(f"Ошибка соединения: {str(err)}")
 
+
 async def async_input() -> str:
     loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, input)
+    return await loop.run_in_executor(None, input, '',)
+
 
 if __name__ == "__main__":
     try:
